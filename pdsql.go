@@ -2,16 +2,17 @@
 package pdsql
 
 import (
-	"github.com/wenerme/coredns-pdsql/pdnsmodel"
 	"net"
 	"strconv"
 	"strings"
 
+	"github.com/wenerme/coredns-pdsql/pdnsmodel"
+
 	"github.com/coredns/coredns/plugin"
 	"github.com/coredns/coredns/request"
-	"github.com/jinzhu/gorm"
 	"github.com/miekg/dns"
 	"golang.org/x/net/context"
+	"gorm.io/gorm"
 )
 
 const Name = "pdsql"
@@ -23,7 +24,12 @@ type PowerDNSGenericSQLBackend struct {
 }
 
 func (pdb PowerDNSGenericSQLBackend) Name() string { return Name }
-func (pdb PowerDNSGenericSQLBackend) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
+
+func (pdb PowerDNSGenericSQLBackend) ServeDNS(
+	ctx context.Context,
+	w dns.ResponseWriter,
+	r *dns.Msg,
+) (int, error) {
 	state := request.Request{W: w, Req: r}
 
 	a := new(dns.Msg)
@@ -48,7 +54,11 @@ func (pdb PowerDNSGenericSQLBackend) ServeDNS(ctx context.Context, w dns.Respons
 			query.Type = "SOA"
 			if pdb.Where(query).Find(&records).Error == nil {
 				rr := new(dns.SOA)
-				rr.Hdr = dns.RR_Header{Name: state.QName(), Rrtype: dns.TypeSOA, Class: state.QClass()}
+				rr.Hdr = dns.RR_Header{
+					Name:   state.QName(),
+					Rrtype: dns.TypeSOA,
+					Class:  state.QClass(),
+				}
 				if ParseSOA(rr, records[0].Content) {
 					a.Extra = append(a.Extra, rr)
 				}
@@ -117,7 +127,10 @@ func (pdb PowerDNSGenericSQLBackend) ServeDNS(ctx context.Context, w dns.Respons
 	return 0, w.WriteMsg(a)
 }
 
-func (pdb PowerDNSGenericSQLBackend) SearchWildcard(qname string, qtype uint16) (redords []*pdnsmodel.Record, err error) {
+func (pdb PowerDNSGenericSQLBackend) SearchWildcard(
+	qname string,
+	qtype uint16,
+) (redords []*pdnsmodel.Record, err error) {
 	// find domain, then find matched sub domain
 	name := qname
 	qnameNoDot := qname[:len(qname)-1]

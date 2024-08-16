@@ -1,13 +1,23 @@
 package pdsql
 
 import (
-	"github.com/wenerme/coredns-pdsql/pdnsmodel"
+	"fmt"
 	"log"
+
+	"github.com/wenerme/coredns-pdsql/pdnsmodel"
+
+	// for now we will just add all the drivers and switch on them
+
+	"gorm.io/driver/clickhouse"
+	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
+	"gorm.io/driver/sqlserver"
 
 	"github.com/coredns/caddy"
 	"github.com/coredns/coredns/core/dnsserver"
 	"github.com/coredns/coredns/plugin"
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 func init() {
@@ -29,8 +39,26 @@ func setup(c *caddy.Controller) error {
 		return plugin.Error("pdsql", c.ArgErr())
 	}
 	arg := c.Val()
+	fmt.Println("dialect: ", dialect)
+	fmt.Println("arg: ", arg)
 
-	db, err := gorm.Open(dialect, arg)
+	var d gorm.Dialector
+
+	switch dialect {
+	case "mysql":
+		d = mysql.Open(arg)
+	case "postgres":
+		d = postgres.Open(arg)
+	case "clickhouse ":
+		d = clickhouse.Open(arg)
+	case "sqlite":
+		d = sqlite.Open(arg)
+	case "sqlserver":
+		d = sqlserver.Open(arg)
+
+	}
+
+	db, err := gorm.Open(d, &gorm.Config{})
 	if err != nil {
 		return err
 	}
@@ -74,5 +102,5 @@ func setup(c *caddy.Controller) error {
 }
 
 func (pdb PowerDNSGenericSQLBackend) AutoMigrate() error {
-	return pdb.DB.AutoMigrate(&pdnsmodel.Record{}, &pdnsmodel.Domain{}).Error
+	return pdb.DB.AutoMigrate(&pdnsmodel.Record{}, &pdnsmodel.Domain{})
 }
