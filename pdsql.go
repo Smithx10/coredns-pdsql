@@ -112,6 +112,9 @@ func (pdb PowerDNSGenericSQLBackend) ServeDNS(
 				} else {
 					rr.Ptr = v.Content + "."
 				}
+			case *dns.CNAME:
+				rr.Hdr = hrd
+				rr.Target = v.Content + "."
 			default:
 				// drop unsupported
 			}
