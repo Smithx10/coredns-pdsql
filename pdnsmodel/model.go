@@ -21,7 +21,7 @@ type Record struct {
 	Ttl       uint32
 	Prio      int
 	ChangDate int
-	Disabled  bool
+	Disabled  bool `gorm:"type:bool"`
 	//ordername             VARCHAR(255) BINARY DEFAULT NULL,
 	//auth                  TINYINT(1) DEFAULT 1,
 }

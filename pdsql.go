@@ -2,6 +2,7 @@
 package pdsql
 
 import (
+	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -38,7 +39,7 @@ func (pdb PowerDNSGenericSQLBackend) ServeDNS(
 	a.Authoritative = true
 
 	var records []*pdnsmodel.Record
-	query := pdnsmodel.Record{Name: state.QName(), Type: state.Type(), Disabled: false}
+	query := &pdnsmodel.Record{Name: state.QName(), Type: state.Type(), Disabled: false}
 	if query.Name != "." {
 		// remove last dot
 		query.Name = query.Name[:len(query.Name)-1]
@@ -49,7 +50,7 @@ func (pdb PowerDNSGenericSQLBackend) ServeDNS(
 		query.Type = ""
 	}
 
-	if err := pdb.Where(query).Find(&records).Error; err != nil {
+	if err := pdb.Where(query, "Name", "Type", "Disabled").Find(&records).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			query.Type = "SOA"
 			if pdb.Where(query).Find(&records).Error == nil {
@@ -67,7 +68,9 @@ func (pdb PowerDNSGenericSQLBackend) ServeDNS(
 			return dns.RcodeServerFailure, err
 		}
 	} else {
+		fmt.Println("Found Records Performing wildcard", records)
 		if len(records) == 0 {
+			fmt.Println("Found 0 Records Performing wildcard")
 			records, err = pdb.SearchWildcard(state.QName(), state.QType())
 			if err != nil {
 				return dns.RcodeServerFailure, err
